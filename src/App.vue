@@ -5,7 +5,6 @@
 </template>
 
 <script>
-// 你好
 export default {
   name: 'App'
 }

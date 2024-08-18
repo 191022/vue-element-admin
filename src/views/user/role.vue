@@ -1,13 +1,13 @@
 <template>
   <div class="dashboard-container">
-    <h2>Dashboard</h2>
+    <h2>Role</h2>
   </div>
 </template>
 
 <script>
 
 export default {
-  name: 'Dashboard',
+  name: 'Role',
   data() {
     return {
     }
