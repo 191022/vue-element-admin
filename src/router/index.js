@@ -99,19 +99,19 @@ export const asyncRoutes = [
     children: [
       {
         path: 'user',
-        component: () => import('@/view/user/user'),
+        component: () => import('@/views/user/user'),
         name: 'User',
         meta: { title: '用户' }
       },
       {
         path: 'role',
-        component: () => import('@/view/user/role'),
+        component: () => import('@/views/user/role'),
         name: 'Role',
         meta: { title: '角色' }
       },
       {
         path: 'permission',
-        component: () => import('@/view/user/permission'),
+        component: () => import('@/views/user/permission'),
         name: 'Permission',
         meta: { title: '权限' }
       }
