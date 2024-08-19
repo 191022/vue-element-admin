@@ -80,16 +80,63 @@
     />
 
     <!-- 用户编辑/创建窗口 -->
-    <el-dialog
-      title="提示"
-      :visible.sync="dialogVisible"
-      width="30%"
-      :before-close="handleClose"
-    >
-      <span>这是一段信息</span>
+    <el-dialog class="user-edit-dialog" :title="userEditForm.id ? '用户编辑' : '新增用户'" :visible.sync="userEditDialogVisible" width="50%" top="8vh">
+      <el-form
+        ref="userEditForm"
+        status-icon
+        :model="userEditForm"
+        label-width="80px"
+        :rules="userEditForm.id ? userUpdateRules : userCreateRules"
+      >
+        <el-form-item label="用户名" prop="userName">
+          <el-input v-model="userEditForm.userName" />
+        </el-form-item>
+        <el-form-item label="真实姓名">
+          <el-input v-model="userEditForm.trueName" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="userEditForm.password" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="userEditForm.email" />
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="userEditForm.gender">
+            <el-radio :label="0">男</el-radio>
+            <el-radio :label="1">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input v-model="userEditForm.address" />
+        </el-form-item>
+        <el-form-item label="简介">
+          <el-input v-model="userEditForm.introduction" />
+        </el-form-item>
+        <el-form-item label="电话">
+          <el-input v-model="userEditForm.phone" />
+        </el-form-item>
+        <el-form-item label="角色" prop="roleIds">
+          <el-select v-model="userEditForm.roleIds" multiple placeholder="请选择角色">
+            <el-option v-for="role in allRoles" :key="role.id" :label="role.name" :value="role.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="头像">
+          <el-upload
+            class="avatar-uploader"
+            action=""
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="file => handleAvatarChange(file)"
+          >
+            <!-- <img v-if="avatarUploadData.url" :src="avatarUploadData.url" class="avatar"> -->
+            <!-- <i v-else class="el-icon-plus avatar-uploader-icon" /> -->
+          </el-upload>
+          <!-- <el-button v-if="avatarUploadData.row" size="mini" @click="resetUploadData(false)">重置</el-button> -->
+        </el-form-item>
+      </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+        <el-button @click="userEditDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addOrUpdateUser = false">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -116,7 +163,72 @@ export default {
         pageNum: 1,
         pageSize: 10,
         total: 1
+      },
+      userEditForm: {
+        id: '',
+        userName: '',
+        trueName: '',
+        password: '',
+        email: '',
+        gender: '',
+        address: '',
+        introduction: '',
+        phone: '',
+        roleIds: []
+      },
+      userEditDialogVisible: false,
+      allRoles: []
+    }
+  },
+  methods: {
+    handleCreateUser() {
+      this.userEditDialogVisible = true
+    },
+    handleImportUser() {
+
+    },
+    // 切换用户账号激活状态
+    handleSwitch() {
+
+    },
+    // 编辑用户信息
+    handleEdit(row) {
+      for (const key in this.userEditForm) {
+        this.userEditForm[key] = row[key]
       }
+      this.userEditDialogVisible = true
+    },
+    // 批量删除用户
+    handleBatchDelete() {
+      // 将tableData.selection中的id提取出来，传递给handleDelete
+    },
+    handleDelete(row) {
+      this.$confirm('此操作将永久删除该用户，是否继续？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 对接删除用户接口
+        // eslint-disable-next-line no-undef
+        // LoadingUtils.createFullScreenLoading('正在删除...')
+        // // eslint-disable-next-line no-undef
+        // UserApi.deldetUsers(userIds).then(() => {
+        //   this.$message.success('删除成功')
+        //   this.getUserList()
+        // }).finally(() => {
+        //   // eslint-disable-next-line no-undef
+        //   LoadingUtils.closeFullScreenLoading()
+        // })
+      })
+    },
+    resetQuery() {
+
+    },
+    hanleSortChange() {
+
+    },
+    addOrUpdateUser() {
+
     }
   }
 }
