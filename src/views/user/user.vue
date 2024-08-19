@@ -1,5 +1,6 @@
 <template>
   <div class="dashboard-container">
+    <!-- 搜索表单 -->
     <el-form :model="tableData" label-width="80px" :inline="true" size="small">
       <el-form-item label="活动名称">
         <el-input
