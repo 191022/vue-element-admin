@@ -213,7 +213,7 @@ export default {
         // eslint-disable-next-line no-undef
         // LoadingUtils.createFullScreenLoading('正在删除...')
         // // eslint-disable-next-line no-undef
-        // UserApi.deldetUsers(userIds).then(() => {
+        // UserApi.deleteUsers(userIds).then(() => {
         //   this.$message.success('删除成功')
         //   this.getUserList()
         // }).finally(() => {
@@ -235,7 +235,7 @@ export default {
 }
 </script>
 <style scoped>
-.date-picker{
+.data-picker{
   margin-right: 10px;
   width: 160px;
 }

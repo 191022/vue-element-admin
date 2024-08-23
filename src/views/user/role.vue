@@ -15,21 +15,13 @@
       </el-form-item>
     </el-form>
 
-    <!-- 用户操作按钮 -->
-    <div>
-      <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleCreateUser">新增</el-button>
-      <el-button type="danger" plain icon="el-icon-delete" size="mini" @click="handleBatchDelete">删除</el-button>
-      <el-button type="info" plain icon="el-icon-upload2" size="mini" @click="handleImportUser">导入</el-button>
-    </div>
-
     <!-- 角色列表 -->
     <el-table
       :data="tableData.list"
-      @selection-change="val => tableData.selection = val"
       @sort-change="hanleSortChange"
     >
       <el-table-column type="index" width="60" />
-      <el-table-column type="selection" width="50" />
+      <el-table-column prop="name" label="角色名称" sortable="custom" />
       <el-table-column prop="description" label="角色描述" sortable="custom" />
       <el-table-column prop="createTime" label="创建时间" sortable="custom" />
       <el-table-column prop="updateTime" label="更新时间" sortable="custom" />
@@ -54,70 +46,24 @@
     />
 
     <!-- 角色编辑/创建窗口 -->
-    <el-dialog :title="roleEditForm.id ? '新增角色' : '角色编辑'" :visible.sync="userEditDialogVisible" width="50%" top="8vh">
-      <el-form
-        ref="userEditForm"
-        status-icon
-        :model="userEditForm"
-        label-width="80px"
-        :rules="userEditForm.id ? userUpdateRules : userCreateRules"
-      >
-        <el-form-item label="用户名" prop="userName">
-          <el-input v-model="userEditForm.userName" />
+    <el-dialog :title="roleEditForm.id ? '新增角色' : '角色编辑'" :visible.sync="roleEditDialogVisible" width="50%">
+      <el-form ref="roleEditForm" :model="roleEditForm" :rules="roleEditFormRules" label-width="80px">
+        <el-form-item label="角色名称" prop="name">
+          <el-input v-model="roleEditForm.name" />
         </el-form-item>
-        <el-form-item label="真实姓名">
-          <el-input v-model="userEditForm.trueName" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="userEditForm.password" />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="userEditForm.email" />
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-radio-group v-model="userEditForm.gender">
-            <el-radio :label="0">男</el-radio>
-            <el-radio :label="1">女</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="地址">
-          <el-input v-model="userEditForm.address" />
-        </el-form-item>
-        <el-form-item label="简介">
-          <el-input v-model="userEditForm.introduction" />
-        </el-form-item>
-        <el-form-item label="电话">
-          <el-input v-model="userEditForm.phone" />
-        </el-form-item>
-        <el-form-item label="角色" prop="roleIds">
-          <el-select v-model="userEditForm.roleIds" multiple placeholder="请选择角色">
-            <el-option v-for="role in allRoles" :key="role.id" :label="role.name" :value="role.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="头像">
-          <el-upload
-            class="avatar-uploader"
-            action=""
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="file => handleAvatarChange(file)"
-          >
-            <!-- <img v-if="avatarUploadData.url" :src="avatarUploadData.url" class="avatar"> -->
-            <!-- <i v-else class="el-icon-plus avatar-uploader-icon" /> -->
-          </el-upload>
-          <!-- <el-button v-if="avatarUploadData.row" size="mini" @click="resetUploadData(false)">重置</el-button> -->
+        <el-form-item label="角色描述">
+          <el-input v-model="roleEditForm.description" />
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="userEditDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addOrUpdateUser = false">确 定</el-button>
+        <el-button @click="roleEditDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addOrUpdateRole = false">确 定</el-button>
       </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-
 export default {
   name: 'Role',
   data() {
@@ -130,11 +76,70 @@ export default {
           createTime: '',
           updateTime: ''
         }],
-        selection: '',
-        pageNum: 1,
+        currentPage: 1,
         pageSize: 10,
         total: 1
+      },
+      roleEditForm: {
+        id: '',
+        name: '',
+        description: ''
+      },
+      roleEditFormRules: {
+        name: [
+          { required: true, trigger: 'blur', validator: this.validateName }
+        ]
+      },
+      roleEditDialogVisible: false
+    }
+  },
+  methods: {
+    /**
+     * 新增角色
+     */
+    handleCreateRole() {
+      for (const key in this.roleEditForm) {
+        this.roleEditForm[key] = ''
       }
+      this.openRoleEditDialog()
+    },
+    /**
+     * 打开角色编辑窗口
+     */
+    openRoleEditDialog() {
+      this.roleEditDialogVisible = true
+      this.$nextTick(() => {
+        this.$refs.roleEditForm.clearValidate()
+      })
+    },
+    /**
+     * 删除角色
+     * @param {Number} id
+     */
+    handleDelete(id) {
+      this.$confirm('此操作将永久删除该用户，是否继续？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 对接删除角色接口
+        // RoleApi.deleteRoles([id]).then(() => {
+        //   this.$message.success('删除成功')
+        //   this.getRoleList()
+        // })
+      }).catch(() => {
+        this.$message.info('已取消删除')
+      })
+    },
+    /**
+     * 编辑角色
+     * @param {Object} row
+     */
+    handleEdit(row) {
+      for (const key in this.roleEditForm) {
+        this.roleEditForm[key] = row[key]
+      }
+      this.openRoleEditDialog()
     }
   }
 }
