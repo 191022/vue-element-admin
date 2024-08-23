@@ -40,6 +40,79 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 分页 -->
+    <el-pagination
+      class="pagination"
+      :current-page.sync="tableData.currentPage"
+      :page-sizes="[10, 20, 30, 40]"
+      :page-size.sync="tableData.pageSize"
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="tableData.total"
+      @size-change="startPagination"
+      @current-change="startPagination"
+    />
+
+    <!-- 角色编辑/创建窗口 -->
+    <el-dialog :title="roleEditForm.id ? '新增角色' : '角色编辑'" :visible.sync="userEditDialogVisible" width="50%" top="8vh">
+      <el-form
+        ref="userEditForm"
+        status-icon
+        :model="userEditForm"
+        label-width="80px"
+        :rules="userEditForm.id ? userUpdateRules : userCreateRules"
+      >
+        <el-form-item label="用户名" prop="userName">
+          <el-input v-model="userEditForm.userName" />
+        </el-form-item>
+        <el-form-item label="真实姓名">
+          <el-input v-model="userEditForm.trueName" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="userEditForm.password" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="userEditForm.email" />
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="userEditForm.gender">
+            <el-radio :label="0">男</el-radio>
+            <el-radio :label="1">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input v-model="userEditForm.address" />
+        </el-form-item>
+        <el-form-item label="简介">
+          <el-input v-model="userEditForm.introduction" />
+        </el-form-item>
+        <el-form-item label="电话">
+          <el-input v-model="userEditForm.phone" />
+        </el-form-item>
+        <el-form-item label="角色" prop="roleIds">
+          <el-select v-model="userEditForm.roleIds" multiple placeholder="请选择角色">
+            <el-option v-for="role in allRoles" :key="role.id" :label="role.name" :value="role.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="头像">
+          <el-upload
+            class="avatar-uploader"
+            action=""
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="file => handleAvatarChange(file)"
+          >
+            <!-- <img v-if="avatarUploadData.url" :src="avatarUploadData.url" class="avatar"> -->
+            <!-- <i v-else class="el-icon-plus avatar-uploader-icon" /> -->
+          </el-upload>
+          <!-- <el-button v-if="avatarUploadData.row" size="mini" @click="resetUploadData(false)">重置</el-button> -->
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="userEditDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addOrUpdateUser = false">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
