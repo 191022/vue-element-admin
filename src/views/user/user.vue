@@ -4,9 +4,9 @@
     <el-form :model="tableData" label-width="80px" :inline="true" size="small">
       <el-form-item label="活动名称">
         <el-input
-          v-model="tableData.name"
+          v-model="tableData.userName"
           placeholder="请输入用户名称"
-          clearable=""
+          clearable
         />
       </el-form-item>
       <el-form-item label="创建时间">
@@ -144,14 +144,18 @@
 </template>
 
 <script>
-// import axios from './axios'
+import axios from '@/axios'
+import LoadingUtils from '@/utils/loading-utils'
+// import * as USerApi from '@/api/user'
 
+// 不复制引用，复制变量值
+const copyObject = obj => JSON.parse(JSON.stringify(obj))
 export default {
   name: 'User',
   data() {
     return {
       tableData: {
-        name: '',
+        userName: '',
         minCreateTime: '',
         maxCreateTime: '',
         list: [{
@@ -159,6 +163,7 @@ export default {
           userName: '张三',
           trueName: '张三',
           roleList: [],
+          createTime: '',
           status: true
         }],
         selection: '',
@@ -179,7 +184,7 @@ export default {
         roleIds: []
       },
       userEditDialogVisible: false,
-      allRoles: [],
+      allRoles: [], // 系统内角色列表
       userCreateRules: {
         userName: [{ required: true, trigger: 'blur', validator: this.userNameValidator }],
         password: [{ required: true, trigger: 'change', validator: this.passwordValidator }],
@@ -193,7 +198,38 @@ export default {
       currentEditRow: null // 当前编辑行
     }
   },
+  // 默认显示
+  mounted() {
+    this.getUserList()
+    this.getAllRoles()
+  },
   methods: {
+    /**
+     * 创建用户
+     */
+    handleCreateUser() {
+      this.resetUserEditForm()
+      // this.resetUploadData()
+      this.openUserEditForm()
+    },
+    /**
+     * 重置用户编辑表单
+     */
+    resetUserEditForm() {
+      for (const key in this.userEditForm) {
+        this.userEditForm[key] = ''
+      }
+      this.userEditForm.roleIds = []
+    },
+    /**
+     * 获取所有角色
+     */
+    getAllRoles() {
+      this.getRoles().then(res => {
+        this.allRoles = res.data.data
+        // this.$refs.userImportDialog.setRoles(this.allRoles)
+      })
+    },
     // 用户名验证函数
     userNameValidator(rule, value, callback) {
       if (!value) {
@@ -225,26 +261,90 @@ export default {
         callback()
       }
     },
-    handleCreateUser() {
-      this.userEditDialogVisible = true
+    /**
+     * 获取用户列表
+     * @param {Object} data {userName,minCreateTime,maxCreateTime,orderBy,orderMethod,pageNum,pageSize}
+     */
+    getUsers(tableData) {
+      const params = new URLSearchParams(tableData)
+      // orderBy由驼峰转下划线
+      if (params.has('orederBy')) {
+        params.set('orderBy', params.get('orderBy').replace(/([A-Z])/g, '_$1').toLowerCase())
+      }
+
+      const url = axios.get(`/users/getUserList?${params.toString()}`)
+      return url
+    },
+    getUserList() {
+      this.getUsers(this.tableData).then(res => {
+        this.tableData.list = res.data.data.records
+        this.tableData.total = res.data.data.total
+        // 更新头像
+        // this.$nextTick(() => {
+        //   this.tableData.list.forEach(row => {
+        //     this.getAvatar(row.id,row)
+        //   })
+        // })
+      })
+      // axios.get('/users/getUserList', {
+      //   params: {
+      //     userName: this.tableData.name,
+      //     minCreateTime: this.tableData.minCreateTime,
+      //     maxCreateTime: this.tableData.maxCreateTime,
+      //     orderBy: this.tableData.orderBy,
+      //     orderMethod: this.tableData.orderMethod,
+      //     pageNum: this.tableData.pageNum,
+      //     pageSize: this.tableData.pageSize
+      //   }
+      // }).then(response => {
+      //   // 返回列表
+      //   this.tableData.list = response.data.data.records
+      //   this.tableData.total = response.data.data.total
+      //   this.tableData.size = response.data.data.size
+      //   this.tableData.currentPage = response.data.data.current
+      // }).catch(error => {
+      //   console.log(error = '没有获取到数据')
+      // })
     },
     handleImportUser() {
 
     },
     // 切换用户账号激活状态
-    handleSwitch() {
+    handleSwitch(row) {
 
+    },
+    getRoles(searchContent) {
+      return axios.get(`/roles/getRoleList`, { params: { searchContent }})
     },
     // 编辑用户信息
     handleEdit(row) {
+      this.currentEditRow = row
       for (const key in this.userEditForm) {
         this.userEditForm[key] = row[key]
       }
+      // 对角色权限数据进行处理
+      this.userEditForm.roleIds = row.roleList ? row.roleList.map(item => {
+        const role = this.allRoles.find(role => role.name === item)
+        return role && role.id
+      }) : []
+      this.userEditForm.roleIds.filter(id => id)
+      this.openUserEditForm()
+      // this.userEditDialogVisible = true
+    },
+    /**
+     * 打开用户编辑窗口
+     */
+    openUserEditForm() {
       this.userEditDialogVisible = true
+      this.$nextTick(() => {
+        this.$refs.userEditForm.clearValidate()
+      })
     },
     // 批量删除用户
     handleBatchDelete() {
       // 将tableData.selection中的id提取出来，传递给handleDelete
+      const ids = this.tableData.selection.map(item => item.id)
+      this.handleDelete(ids)
     },
     handleDelete(row) {
       this.$confirm('此操作将永久删除该用户，是否继续？', '提示', {
@@ -253,20 +353,26 @@ export default {
         type: 'warning'
       }).then(() => {
         // 对接删除用户接口
-        // eslint-disable-next-line no-undef
-        // LoadingUtils.createFullScreenLoading('正在删除...')
-        // // eslint-disable-next-line no-undef
-        // UserApi.deleteUsers(userIds).then(() => {
-        //   this.$message.success('删除成功')
-        //   this.getUserList()
-        // }).finally(() => {
-        //   // eslint-disable-next-line no-undef
-        //   LoadingUtils.closeFullScreenLoading()
-        // })
+      //   axios.delete('/users/deleteUsers', row.id).then(() => {
+      //     this.$message.success('删除成功')
+      //     this.getUserList()
+      //   }).catch(error => {
+      //     this.$message.error('删除失败')
+      //     console.error(error)
+      //   })
+      // }).catch(() => {
+      //   this.$message.info('已取消删除')
       })
     },
+    /**
+     * 重置查询条件
+     */
     resetQuery() {
-
+      this.tableData.userName = ''
+      this.tableData.minCreateTime = ''
+      this.tableData.maxCreateTime = ''
+      // this.tableData.pageNum = 1
+      // this.getUserList()
     },
     hanleSortChange() {
 
@@ -278,7 +384,34 @@ export default {
       this.$refs.userEditForm.validate(valid => {
         if (valid) {
           // 如果验证通过就调用添加或者更新用户的接口
+          const params = copyObject(this.userEditForm)
+          if (!params.password) {
+            delete params.password
+          }
+          LoadingUtils.createFullScreenLoading('正在保存')
+          // const tempApi = this.userEditForm.id ? this.updateUser : this.addUser
         }
+      })
+    },
+    updateUser() {
+    },
+    addUser() {
+
+    },
+    getInfo() {
+      return axios.get(`/users/me`)
+    },
+    getAvatar() {
+      return new Promise((reslove, reject) => {
+        axios({
+          method: 'get',
+          url: `/users/me/avatar`,
+          responseType: 'blob'
+        }).then(response => {
+          // reslove(generateAvatarUrl(response))
+        }).catch(error => {
+          reject(error)
+        })
       })
     }
   }

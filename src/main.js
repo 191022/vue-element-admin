@@ -13,6 +13,7 @@ import '@/styles/index.scss' // global css
 import App from './App'
 import store from './store'
 import router from './router'
+// import axios from './axios'
 
 import './icons' // icon
 import './permission' // permission control
@@ -45,6 +46,7 @@ Object.keys(filters).forEach(key => {
 
 Vue.config.productionTip = false
 
+// Vue.prototype.$http = axios
 new Vue({
   el: '#app',
   router,

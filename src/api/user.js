@@ -22,3 +22,13 @@ export function logout() {
     method: 'post'
   })
 }
+
+// export function getUsers(data) {
+//   const params = new URLSearchParams(data)
+//   // orderBy由驼峰转下划线
+//   if (params.has('orederBy')) {
+//     params.set('orderBy', params.get('orderBy').replace(/([A-Z])/g, '_$1').toLowerCase())
+//   }
+//   const url = `user-api/users?${params.toString()}`
+//   return request.get(url)
+// }

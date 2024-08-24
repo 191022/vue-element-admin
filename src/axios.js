@@ -3,7 +3,7 @@
 import axios from 'axios'
 
 axios.defaults.baseURL = 'http://localhost:8090'
-axios.defaults.headers.common.Authorization = 'qxc'
+axios.defaults.headers.common.Authorization = ''
 
 axios.interceptors.request.use(config => {
   // 在发送请求之前做些什么
