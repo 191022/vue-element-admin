@@ -33,7 +33,7 @@
     <div>
       <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleCreateUser">新增</el-button>
       <el-button type="danger" plain icon="el-icon-delete" size="mini" @click="handleBatchDelete">删除</el-button>
-      <el-button type="info" plain icon="el-icon-upload2" size="mini" @click="handleImportUser">导入</el-button>
+      <!-- <el-button type="info" plain icon="el-icon-upload2" size="mini" @click="handleImportUser">导入</el-button> -->
     </div>
 
     <!-- 用户列表 -->
@@ -140,6 +140,8 @@
         <el-button type="primary" @click="addOrUpdateUser">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 用户导入弹窗 -->
+    <!-- <user-import-dialog ref="userImportDialog" @import-success="getUserList" /> -->
   </div>
 </template>
 
@@ -237,11 +239,27 @@ export default {
       } else if (this.userEditForm.id && value === this.currentEditRow.userName) {
         callback()
       } else {
+        // callback()
         // 使用接口判断用户名是否重名
-        // checkUserName(value).then(res => {
-        //   callback(res.data.data ? res.Error('用户名已存在') : undefined)
-        // })
+        this.checkUserName(value).then(res => {
+          if (res.data.data) {
+            callback(new Error('用户名已存在'))
+          } else {
+            callback(undefined)
+          }
+          // callback(res.data.data ? res.Error('用户名已存在') : undefined)
+        }).catch(error => {
+          this.$message.error('检查用户名时出错')
+          console.error(error)
+        })
       }
+    },
+    checkUserName(userName) {
+      return axios.post(`/users/user-name/exist`, userName, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
     },
     // 密码验证函数
     passwordValidator(rule, value, callback) {
@@ -286,37 +304,34 @@ export default {
         //   })
         // })
       })
-      // axios.get('/users/getUserList', {
-      //   params: {
-      //     userName: this.tableData.name,
-      //     minCreateTime: this.tableData.minCreateTime,
-      //     maxCreateTime: this.tableData.maxCreateTime,
-      //     orderBy: this.tableData.orderBy,
-      //     orderMethod: this.tableData.orderMethod,
-      //     pageNum: this.tableData.pageNum,
-      //     pageSize: this.tableData.pageSize
-      //   }
-      // }).then(response => {
-      //   // 返回列表
-      //   this.tableData.list = response.data.data.records
-      //   this.tableData.total = response.data.data.total
-      //   this.tableData.size = response.data.data.size
-      //   this.tableData.currentPage = response.data.data.current
-      // }).catch(error => {
-      //   console.log(error = '没有获取到数据')
-      // })
     },
+    /**
+     * 导入 批量创建用户
+     */
     handleImportUser() {
 
     },
-    // 切换用户账号激活状态
+    /**
+     * 切换用户账号激活状态
+     * @param {Object} row 行数据
+     */
     handleSwitch(row) {
-
+      this.changeUserStatus(row.id, row.status).then(() => {
+        this.$message.success('操作成功')
+      })
+    },
+    /**
+     * 修改用户状态
+     */
+    changeUserStatus(userId, status) {
+      axios.put(`/users/${userId}/status?status=${status}`)
     },
     getRoles(searchContent) {
       return axios.get(`/roles/getRoleList`, { params: { searchContent }})
     },
-    // 编辑用户信息
+    /**
+     * 编辑用户信息
+     */
     handleEdit(row) {
       this.currentEditRow = row
       for (const key in this.userEditForm) {
@@ -343,26 +358,39 @@ export default {
     // 批量删除用户
     handleBatchDelete() {
       // 将tableData.selection中的id提取出来，传递给handleDelete
-      const ids = this.tableData.selection.map(item => item.id)
-      this.handleDelete(ids)
+      if (this.tableData.selection.length === 0) {
+        this.$message.warning('请选择要删除的用户')
+        return
+      }
+      const userIds = this.tableData.selection.map(item => item.id)
+      this.handleDelete(userIds)
     },
-    handleDelete(row) {
+    /**
+     * 删除用户
+     * @param {id} userIds id
+     */
+    handleDelete(userIds) {
       this.$confirm('此操作将永久删除该用户，是否继续？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
         // 对接删除用户接口
-      //   axios.delete('/users/deleteUsers', row.id).then(() => {
-      //     this.$message.success('删除成功')
-      //     this.getUserList()
-      //   }).catch(error => {
-      //     this.$message.error('删除失败')
-      //     console.error(error)
-      //   })
-      // }).catch(() => {
-      //   this.$message.info('已取消删除')
+        LoadingUtils.createFullScreenLoading('正在删除...')
+        this.deleteUsers(userIds).then(() => {
+          this.$message.success('删除成功')
+          this.getUserList()
+        }).finally(() => {
+          LoadingUtils.closeFullScreenLoading()
+        })
       })
+    },
+    /**
+     * 删除用户
+     * @param {list} userIds
+     */
+    deleteUsers(userIds) {
+      return axios.delete(`/users/deleteUsers?ids=` + userIds.join(','))
     },
     /**
      * 重置查询条件
@@ -374,8 +402,14 @@ export default {
       // this.tableData.pageNum = 1
       // this.getUserList()
     },
-    hanleSortChange() {
-
+    /**
+     * 处理排序变化
+     * @param {object} column 列对象
+     * @param {string} prop 列属性
+     * @param {string} order 排序方式
+     */
+    hanleSortChange({ column, prop, order }) {
+      this.tableData.orderBy = prop
     },
     /**
      * 添加或更新用户
@@ -385,18 +419,38 @@ export default {
         if (valid) {
           // 如果验证通过就调用添加或者更新用户的接口
           const params = copyObject(this.userEditForm)
-          if (!params.password) {
-            delete params.password
-          }
+          // if (!params.password) {
+          //   delete params.password
+          // }
           LoadingUtils.createFullScreenLoading('正在保存')
-          // const tempApi = this.userEditForm.id ? this.updateUser : this.addUser
+          const tempApi = this.userEditForm.id ? this.updateUser : this.addUser
+          tempApi(params).then(res => {
+            this.$message.success('操作成功')
+            if (!this.userEditForm.id) {
+              this.userEditForm.id = res.data.data.id
+            }
+            // this.updateAvatar()
+            this.getUserList()
+          }).finally(() => {
+            this.userEditDialogVisible = false
+            LoadingUtils.closeFullScreenLoading()
+          })
         }
       })
     },
-    updateUser() {
+    /**
+     * 更新用户信息
+     * @param {Object} userEditForm {userName,trueName,password,email,gender,address,introduction,phone,roleId}
+     */
+    updateUser(userEditForm) {
+      return axios.put(`/users/updateUserInfo`, userEditForm)
     },
-    addUser() {
-
+    /**
+     * 添加用户
+     * @param {Object} userEditForm {userName,trueName,password,email,gender,address,introduction,phone,roleId}
+     */
+    addUser(userEditForm) {
+      return axios.post(`/users/addOneUser`, userEditForm)
     },
     getInfo() {
       return axios.get(`/users/me`)
